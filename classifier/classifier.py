@@ -16,6 +16,7 @@ import arrow
 import os
 import subprocess
 import sys
+from pathlib import Path
 
 
 VERSION = 'Classifier 2.0'
@@ -31,10 +32,6 @@ elif PLATFORM == 'linux' or PLATFORM == 'linux2' or OS == 'posix':
     CONFIG = os.path.join(os.getenv('HOME'), '.classifier-master.conf')
 else:
     CONFIG = os.path.join(os.getcwd(), '.classifier-master.conf')
-
-
-def main():
-    Classifier()
 
 
 class Classifier:
@@ -62,13 +59,13 @@ class Classifier:
 
         self.parser.add_argument("-rst", "--reset", action='store_true',
                                  help="Reset the default Config file")
-        
+
         """
         self.parser.add_argument("-r", "--recursive", action='store_true',
                                  help="Recursively search your source directory. " +
                                  "WARNING: Ensure you use the correct path as this " +
                                  "WILL move all files from your selected types.")
-        """        
+        """
 
         self.parser.add_argument("-st", "--specific-types", type=str, nargs='+',
                                  help="Move all file extensions, given in the args list, " +
@@ -99,17 +96,18 @@ class Classifier:
     def create_default_config(self):
         with open(CONFIG, "w") as conffile:
             conffile.write("IGNORE: part, desktop\n" +
-                           "Music: mp3, aac, flac, ogg, wma, m4a, aiff, wav, amr\n" +
-                           "Videos: flv, ogv, avi, mp4, mpg, mpeg, 3gp, mkv, ts, webm, vob, wmv\n" +
+                           "Musics: mp3, aac, flac, ogg, wma, m4a, aiff, wav, amr\n" +
+                           "Videos: flv, ogv, avi, mp4, mpg, mpeg, 3gp, mkv, ts, webm, vob, wmv, ass, srt, lrc\n" +
                            "Pictures: png, jpeg, gif, jpg, bmp, svg, webp, psd, tiff\n" +
                            "Archives: rar, zip, 7z, gz, bz2, tar, dmg, tgz, xz, iso, cpio\n" +
                            "Documents: txt, pdf, doc, docx, odf, xls, xlsv, xlsx, " +
                            "ppt, pptx, ppsx, odp, odt, ods, md, json, csv\n" +
                            "Books: mobi, epub, chm\n" +
-                           "DEBPackages: deb\n" +
+                           "Packages: deb, whl, rpm\n" +
                            "Programs: exe, msi\n" +
-                           "RPMPackages: rpm")
-        print("CONFIG file created at: "+CONFIG)
+                           "Torrents: torrent\n" +
+                           "SeperatedCodes: py, c, cpp, js, java, css")
+        print("CONFIG file created at: " + CONFIG)
 
     def checkconfig(self):
         """ create a default config if not available """
@@ -121,8 +119,8 @@ class Classifier:
         with open(CONFIG, 'r') as file:
             for items in file:
                 spl = items.replace('\n', '').split(':')
-                key = spl[0].replace(" ","")
-                val = spl[1].replace(" ","")
+                key = spl[0].replace(" ", "")
+                val = spl[1].replace(" ", "")
                 self.formats[key] = val
         return
 
@@ -135,9 +133,15 @@ class Classifier:
             if os.path.isfile(from_file):
                 if not os.path.exists(to_folder):
                     os.makedirs(to_folder)
-                os.rename(from_file, to_file)
+                try:
+                    os.rename(from_file, to_file)
+                except:
+                    to_file = os.path.join(to_folder, Path(
+                        filename).stem+"_1"+Path(filename).suffix)
+                    os.rename(from_file, to_file)
         return
 
+    # 實際分類的地方，寫得有夠醜的…
     def classify(self, formats, output, directory):
         for file in os.listdir(directory):
             tmpbreak = False
@@ -150,6 +154,7 @@ class Classifier:
                         if file_ext == ignored:
                             tmpbreak = True
                 if not tmpbreak:
+                    isMoved = False
                     for folder, ext_list in list(formats.items()):
                         # never move files in the ignore list
                         if not folder == 'IGNORE':
@@ -161,8 +166,12 @@ class Classifier:
                                 if file_ext == tmp_ext:
                                     try:
                                         self.moveto(file, directory, folder)
+                                        isMoved = True
                                     except Exception as e:
-                                        print('Cannot move file - {} - {}'.format(file, str(e)))
+                                        print(
+                                            'Cannot move file - {} - {}'.format(file, str(e)))
+                    if not isMoved:
+                        self.moveto(file, directory, "NonCategorized")
             """
             elif os.path.isdir(os.path.join(directory, file)) and self.args.recursive:
                 self.classify(self.formats, output, os.path.join(directory, file))
@@ -173,7 +182,8 @@ class Classifier:
         print("Scanning Files")
 
         files = [x for x in os.listdir(directory) if not x.startswith('.')]
-        creation_dates = map(lambda x: (x, arrow.get(os.path.getctime(os.path.join(directory, x)))), files)
+        creation_dates = map(lambda x: (x, arrow.get(
+            os.path.getctime(os.path.join(directory, x)))), files)
         print(creation_dates)
 
         for file, creation_date in creation_dates:
@@ -203,7 +213,7 @@ class Classifier:
         if self.args.types:
             # Show file format information then quit
             for key, value in self.formats.items():
-                print(key + ': '+ value)
+                print(key + ': ' + value)
             return False
 
         if self.args.edittypes:
@@ -275,7 +285,8 @@ class Classifier:
                           '\nFormats:   ' + val)
                     self.classify(self.formats, dst, directory)
                 except ValueError:
-                    print("Your local config file is malformed. Please check and try again.")
+                    print(
+                        "Your local config file is malformed. Please check and try again.")
                     return False
         else:
             print("\nScanning Folder: " + directory)
@@ -288,3 +299,6 @@ class Classifier:
         print("Done!\n")
         return True
 
+
+if __name__ == '__main__':
+    Classifier()
