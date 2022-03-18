@@ -97,7 +97,7 @@ class Classifier:
         with open(CONFIG, "w") as conffile:
             conffile.write("IGNORE: part, desktop\n" +
                            "Musics: mp3, aac, flac, ogg, wma, m4a, aiff, wav, amr\n" +
-                           "Videos: flv, ogv, avi, mp4, mpg, mpeg, 3gp, mkv, ts, webm, vob, wmv, ass, srt, lrc\n" +
+                           "Videos: flv, ogv, avi, mp4, mpg, mpeg, 3gp, mkv, ts, webm, vob, wmv, ass, srt, lrc, rmvb, rm\n" +
                            "Pictures: png, jpeg, gif, jpg, bmp, svg, webp, psd, tiff\n" +
                            "Archives: rar, zip, 7z, gz, bz2, tar, dmg, tgz, xz, iso, cpio\n" +
                            "Documents: txt, pdf, doc, docx, odf, xls, xlsv, xlsx, " +
@@ -171,7 +171,7 @@ class Classifier:
                                         print(
                                             'Cannot move file - {} - {}'.format(file, str(e)))
                     if not isMoved:
-                        self.moveto(file, directory, "NonCategorized")
+                        self.moveto(file, directory, directory/"NonCategorized")
             """
             elif os.path.isdir(os.path.join(directory, file)) and self.args.recursive:
                 self.classify(self.formats, output, os.path.join(directory, file))
