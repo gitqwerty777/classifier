@@ -171,7 +171,8 @@ class Classifier:
                                         print(
                                             'Cannot move file - {} - {}'.format(file, str(e)))
                     if not isMoved:
-                        self.moveto(file, directory, directory/"NonCategorized")
+                        self.moveto(file, directory, Path(
+                            directory)/"NonCategorized")
             """
             elif os.path.isdir(os.path.join(directory, file)) and self.args.recursive:
                 self.classify(self.formats, output, os.path.join(directory, file))
@@ -301,4 +302,9 @@ class Classifier:
 
 
 if __name__ == '__main__':
+    """
+    使用方法：
+        # 不用-o，-d預設放在同目錄
+        py -3.7 .\classifier.py -d E:\Downloads    
+    """
     Classifier()
